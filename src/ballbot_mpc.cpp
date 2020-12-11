@@ -4,6 +4,7 @@
 
 // System Dynamics
 #include "ballbot_mpc_nav/DroneState.h"
+#include "ballbot_mpc_nav/ballbot_dynamics.h"
 #include "ballbot_mpc_nav/drone_dynamics.h"
 #include "ballbot_mpc_nav/tumbller_dynamics.h"
 
@@ -32,6 +33,10 @@ BallbotMPC::BallbotMPC(ros::NodeHandle &nh) : m_nh(nh) {
 
   /// Load system dynamics
   ::dynamics::DroneDynamics dynamics;
+  ::dynamics::BallbotDynamics ballbot_dyn;
+
+  std::cout << "Ad:\n" << ballbot_dyn.Ad << std::endl;
+  std::cout << "Bd: \n" << ballbot_dyn.Bd << std::endl;
 
   // Setup MPC solver
   m_Nx = dynamics.Ad.rows();
@@ -45,7 +50,7 @@ BallbotMPC::BallbotMPC(ros::NodeHandle &nh) : m_nh(nh) {
 
   m_mpc.reset(new ::control::mpc::LinearMPC(
       dynamics.Ad, dynamics.Bd, dynamics.Qx, dynamics.Qn, dynamics.Ru,
-      dynamics.xbounds, dynamics.ubounds,m_N));
+      dynamics.xbounds, dynamics.ubounds, m_N));
 }
 
 //========================================================================================
