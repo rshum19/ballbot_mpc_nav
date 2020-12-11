@@ -21,20 +21,20 @@ BallbotMPC::BallbotMPC(ros::NodeHandle &nh) : m_nh(nh) {
   // Subscribe ROS Topics
   m_odom_sub = m_nh.subscribe("/rt/odom", 2, &BallbotMPC::odom_callback, this);
 
-  // Setup MPC solver
-  m_Nx = ::control::mpc::m_Nx;
-  m_Nu = ::control::mpc::m_Nu;
-  m_N = ::control::mpc::m_N;
-  m_dt = 0.01;
-
   /// Load system dynamics
   ::dynamics::DroneDynamics dynamics;
+
+  // Setup MPC solver
+  m_Nx = dynamics.Ad.rows();
+  m_Nu = dynamics.Bd.cols();
+  m_N = 10;
+  m_dt = 0.01;
 
   m_q_curr.resize(m_Nx, 1);
 
   m_mpc.reset(new ::control::mpc::LinearMPC(
       dynamics.Ad, dynamics.Bd, dynamics.Qx, dynamics.Qn, dynamics.Ru,
-      dynamics.xbounds, dynamics.ubounds));
+      dynamics.xbounds, dynamics.ubounds,m_N));
 }
 
 //========================================================================================
