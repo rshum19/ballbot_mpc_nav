@@ -46,12 +46,21 @@ private:
   // Callback functions
   void odom_callback(const rt_msgs::Odom::ConstPtr &msg);
 
+  /**
+   * @brief Publish to topic
+   */
+  void publish_state_msg(const Eigen::MatrixXd &state, ros::Publisher &pub);
+
   // ROS Node
   ros::NodeHandle m_nh;
 
   // ROS Topics & Msgs
   ros::Publisher m_cmd_pub;
   ros::Subscriber m_odom_sub;
+
+  // Debug Topics
+  ros::Publisher m_ref_traj_pub;
+  ros::Publisher m_opt_traj_pub;
 
   rt_msgs::Odom m_odom_msg, m_odom_des_msg;
   rt_msgs::OlcCmd m_olc_cmd_msg;

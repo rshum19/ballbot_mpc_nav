@@ -11,6 +11,8 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   linear_mpc
   rt_msgs
+  ballbot_math
+  message_generation
 )
 
 ## System dependencies are found with CMake's conventions
@@ -28,6 +30,18 @@ find_package(osqp REQUIRED)
 ## Declare ROS messages, services and actions ##
 ################################################
 
+## Generate messages in the 'msg' folder
+add_message_files(
+  FILES
+  DroneState.msg
+)
+
+## Generate added messages and services with any dependencies listed here
+generate_messages(
+   DEPENDENCIES
+   std_msgs
+)
+
 ################################################
 ## Declare ROS dynamic reconfigure parameters ##
 ################################################
@@ -42,6 +56,7 @@ catkin_package(
     roscpp
     linear_mpc
     rt_msgs
+    ballbot_math
 #  DEPENDS system_lib
 )
 
