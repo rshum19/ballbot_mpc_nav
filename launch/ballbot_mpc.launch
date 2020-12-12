@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<launch>
+
+  <arg name="sim" default="false"/>
+
+  <node pkg="ballbot_mpc_nav" type="ballbot_mpc_node" name="ballbot_mpc_node" output="screen">
+    <param name="horizon_size" value="10"/>
+    <param name="mpc_dt" value="0.1"/> 
+    <param name="control_freq_hz" value="100"/>
+    <remap if="$(arg sim)" from="/mpc/debug/des_odom" to="/rt/odom"/>
+  </node>
+
+
+</launch>

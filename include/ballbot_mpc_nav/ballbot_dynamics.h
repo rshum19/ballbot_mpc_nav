@@ -1,7 +1,7 @@
 #pragma once
 
 #include <Eigen/Dense>
-#include <cmath>
+#include <math.h>
 
 #include <iostream>
 
@@ -29,7 +29,7 @@ public:
     // Weights on state deviation and control input
     Qx.resize(Nx, Nx);
     Qx.setZero();
-    Qx.diagonal() << 100, 100, 10, 10;
+    Qx.diagonal() << 100, 100, 1, 100;
 
     Qn.resize(Nx, Nx);
     Qn = 10 * Qx;
@@ -46,6 +46,35 @@ public:
     ubounds.resize(Nu, 2);
     ubounds.col(0) << -10;
     ubounds.col(1) << 10;
+  }
+
+  /**
+   * @brief Generate the reference trajectory to track
+   *
+   * @param[in] tstart  time to start motion from [sec]
+   * @param[in] N motion horizon length [qty]
+   * @param[in] dt  time discretization [sec]
+   *
+   * @return the refernce trajectory matrix of size [Nx,N] where the rows
+   * represent the states [theta,phi,dtheta,dphi]'
+   */
+  Eigen::MatrixXd generate_reference_trajectory(const double &time,
+                                                const int &N,
+                                                const double &dt) {
+
+    // Reference trajectory
+    Eigen::MatrixXd ref_traj(Nx, N + 1);
+    ref_traj.setZero();
+    double xPos = 0.0;
+    for (int i = 0; i < N + 1; i++) {
+      double ti = time + dt * i;
+      // ref_traj(0, i) = sin(0.5 * ti); // xref
+      xPos = sin(0.5 * ti);
+      ref_traj(0, i) = xPos / r;
+      ref_traj(1, i) = 0; // yref
+    }
+
+    return ref_traj;
   }
 
   // Linearized dynamics
@@ -67,9 +96,11 @@ public:
   double alpha = Iball + (mball + mbody) * std::pow(r, 2);
   double beta = mbody * r * l;
   double gamma = Ibody + mbody * std::pow(l, 2);
+  /*double denom =
+      Ibody * alpha + Iball * mbody * std::pow(l, 2) + beta * mball * r * l;*/
 
-  double Gamma1 = (g * l * mbody * (alpha + beta)) / denom;
-  double Gamma2 = -(g * l * mbody * alpha) / denom;
+  double Gamma1 = -(g * l * mbody * (alpha + beta)) / denom;
+  double Gamma2 = (g * l * mbody * alpha) / denom;
   double Beta1 = (alpha + gamma + 2 * beta) / denom;
   double Beta2 = -(alpha + beta) / denom;
 
