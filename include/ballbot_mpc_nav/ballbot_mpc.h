@@ -79,6 +79,7 @@ private:
   ros::Publisher m_ref_traj_pub;
   ros::Publisher m_opt_traj_pub;
   ros::Publisher m_des_odom_pub;
+  ros::Publisher m_debug_cmd_pub;
 
   rt_msgs::Odom m_odom_msg, m_odom_des_msg;
   rt_msgs::OlcCmd m_olc_cmd_msg;

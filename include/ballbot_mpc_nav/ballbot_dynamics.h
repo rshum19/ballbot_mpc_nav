@@ -29,7 +29,7 @@ public:
     // Weights on state deviation and control input
     Qx.resize(Nx, Nx);
     Qx.setZero();
-    Qx.diagonal() << 100, 100, 1, 100;
+    Qx.diagonal() << 100, 1, 1, 10;
 
     Qn.resize(Nx, Nx);
     Qn = 10 * Qx;
@@ -40,8 +40,8 @@ public:
 
     // Bounds on states and controls
     xbounds.resize(Nx, 2);
-    xbounds.col(0) << -1e10, -M_PI / 4, -1e10, -1e10;
-    xbounds.col(1) << 1e10, M_PI / 4, 1e10, 1e10;
+    xbounds.col(0) << -1e10, -10*180/M_PI, -1e10, -1e10;
+    xbounds.col(1) << 1e10, 10*180/M_PI, 1e10, 1e10;
 
     ubounds.resize(Nu, 2);
     ubounds.col(0) << -10;
@@ -69,7 +69,7 @@ public:
     for (int i = 0; i < N + 1; i++) {
       double ti = time + dt * i;
       // ref_traj(0, i) = sin(0.5 * ti); // xref
-      xPos = sin(0.5 * ti);
+      xPos = sin(0.1 * ti);
       ref_traj(0, i) = xPos / r;
       ref_traj(1, i) = 0; // yref
     }
