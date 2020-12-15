@@ -100,6 +100,7 @@ private:
   // Dynamic model
   //::dynamics::DroneDynamics m_dynamics;
   ::dynamics::BallbotDynamics m_dynamics;
+  ::dynamics::BallbotDynamics::Trajectories m_trajectory;
 };
 
 } // namespace control

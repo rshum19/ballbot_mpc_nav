@@ -22,13 +22,11 @@ BallbotMPC::BallbotMPC(ros::NodeHandle &nh, const double &N_horizon,
 
   // Advertise ROS Topics
   m_cmd_pub = m_nh.advertise<rt_msgs::OlcCmd>("/rt/olc_cmd", 20);
-  m_ref_traj_pub =
-      m_nh.advertise<rt_msgs::Odom>("/mpc/debug/ref_traj", 20);
-  m_opt_traj_pub =
-      m_nh.advertise<rt_msgs::Odom>("/mpc/debug/opt_traj", 20);
+  m_ref_traj_pub = m_nh.advertise<rt_msgs::Odom>("/mpc/debug/ref_traj", 20);
+  m_opt_traj_pub = m_nh.advertise<rt_msgs::Odom>("/mpc/debug/opt_traj", 20);
 
   m_des_odom_pub = m_nh.advertise<rt_msgs::Odom>("/mpc/debug/des_odom", 20);
-  m_debug_cmd_pub = m_nh.advertise<rt_msgs::OlcCmd>("/mpc/debug/cmd",20);
+  m_debug_cmd_pub = m_nh.advertise<rt_msgs::OlcCmd>("/mpc/debug/cmd", 20);
 
   // Subscribe ROS Topics
   m_odom_sub = m_nh.subscribe("/rt/odom", 2, &BallbotMPC::odom_callback, this);
@@ -36,14 +34,18 @@ BallbotMPC::BallbotMPC(ros::NodeHandle &nh, const double &N_horizon,
   // Setup MPC solver
   m_Nx = m_dynamics.Ad.rows();
   m_Nu = m_dynamics.Bd.cols();
-  // m_N = 10;
-  // m_dt = 0.01;
+
+  // PRINT DYNAMICS
+  std::cout << "Ad: \n" << m_dynamics.Ad << std::endl;
+  std::cout << "Bd: \n" << m_dynamics.Bd << std::endl;
 
   m_q_curr.resize(m_Nx, 1);
+  m_trajectory = ::dynamics::BallbotDynamics::Trajectories::STRAIGHT;
   Eigen::MatrixXd ref_traj =
-      m_dynamics.generate_reference_trajectory(0, m_Nx, m_dt);
+      m_dynamics.generate_reference_trajectory(0, m_Nx, m_dt, m_trajectory);
   m_q_curr = ref_traj.col(0);
 
+  std::cout << "Creating mpc instance " << std::endl;
   m_mpc.reset(new ::control::mpc::LinearMPC(
       m_dynamics.Ad, m_dynamics.Bd, m_dynamics.Qx, m_dynamics.Qn, m_dynamics.Ru,
       m_dynamics.xbounds, m_dynamics.ubounds, m_N));
@@ -84,7 +86,7 @@ Eigen::MatrixXd BallbotMPC::generate_reference_trajectory(const double &time) {
 void BallbotMPC::step(const double &time) {
 
   Eigen::MatrixXd ref_traj =
-      m_dynamics.generate_reference_trajectory(time, m_N, m_dt);
+      m_dynamics.generate_reference_trajectory(time, m_N, m_dt, m_trajectory);
 
   // Eigen::VectorXd x0 = ref_traj.col(0);
 
@@ -107,7 +109,7 @@ void BallbotMPC::step(const double &time) {
   publish_command(opt_traj, u0);
 
   // Update to current positon (for now its fake)
-  //m_q_curr = ref_traj.col(1);
+  // m_q_curr = ref_traj.col(1);
   publish_des_odom(ref_traj.col(1));
 }
 
@@ -116,21 +118,14 @@ void BallbotMPC::publish_state_msg(const Eigen::MatrixXd &state,
                                    ros::Publisher &pub) {
 
   rt_msgs::Odom ref_traj_msg;
-  /*ref_traj_msg.xPosition = ballbot::math::eig2vec(state.row(0));
-  ref_traj_msg.yPosition = ballbot::math::eig2vec(state.row(1));
-  // ref_traj_msg.zPosition = ballbot::math::eig2vec(state.row(2));
-  ref_traj_msg.xVelocity = ballbot::math::eig2vec(state.row(2));
-  ref_traj_msg.yVelocity = ballbot::math::eig2vec(state.row(3));
-  // ref_traj_msg.zVelocity = ballbot::math::eig2vec(state.row(5));*/
-
-  ref_traj_msg.xPos = state(0,1) * m_dynamics.r;
+  ref_traj_msg.xPos = state(0, 1) * m_dynamics.r;
   ref_traj_msg.yPos = 0.0;
   ref_traj_msg.yaw = 0.0;
-  ref_traj_msg.xVel = state(2,1) * m_dynamics.r;
+  ref_traj_msg.xVel = state(2, 1) * m_dynamics.r;
   ref_traj_msg.yVel = 0.0;
-  ref_traj_msg.xAng = state(1,1);
+  ref_traj_msg.xAng = state(1, 1);
   ref_traj_msg.yAng = 0.0;
-  ref_traj_msg.xAngVel = state(3,1);
+  ref_traj_msg.xAngVel = state(3, 1);
   ref_traj_msg.yAngVel = 0.0;
 
   pub.publish(ref_traj_msg);
@@ -145,12 +140,12 @@ void BallbotMPC::publish_command(const Eigen::MatrixXd &opt_traj,
   Eigen::VectorXd x_pos = opt_traj.row(0) * m_dynamics.r;
 
   rt_msgs::OlcCmd olc_cmd_msg;
-  olc_cmd_msg.xAng = opt_traj(1, 1);
+  olc_cmd_msg.xAng = m_dynamics.Kmpc * u0(1, 0);
   olc_cmd_msg.yAng = 0.0;
-  olc_cmd_msg.xVel = x_vel(1);
+  olc_cmd_msg.xVel = m_dynamics.Kmpc * u0(2, 0);
   olc_cmd_msg.yVel = 0.0;
-	
-  //m_cmd_pub.publish(olc_cmd_msg);
+
+  // m_cmd_pub.publish(olc_cmd_msg);
   m_debug_cmd_pub.publish(olc_cmd_msg);
 }
 
