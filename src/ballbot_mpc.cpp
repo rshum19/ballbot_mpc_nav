@@ -40,10 +40,11 @@ BallbotMPC::BallbotMPC(ros::NodeHandle &nh, const double &N_horizon,
   std::cout << "Bd: \n" << m_dynamics.Bd << std::endl;
 
   m_q_curr.resize(m_Nx, 1);
+  m_q_zero.resize(m_Nx, 1);
   m_trajectory = ::dynamics::BallbotDynamics::Trajectories::STRAIGHT;
-  Eigen::MatrixXd ref_traj =
+  /*Eigen::MatrixXd ref_traj =
       m_dynamics.generate_reference_trajectory(0, m_Nx, m_dt, m_trajectory);
-  m_q_curr = ref_traj.col(0);
+  m_q_curr = ref_traj.col(0);*/
 
   std::cout << "Creating mpc instance " << std::endl;
   m_mpc.reset(new ::control::mpc::LinearMPC(
@@ -56,14 +57,17 @@ void BallbotMPC::odom_callback(const rt_msgs::Odom::ConstPtr &msg) {
 
   m_odom_msg = *msg;
 
-  // Need to convert to Eigen::Matrix
-
-  // m_q_curr.setZero();
   // Convert linear position and velocity to angular
   m_q_curr(0) = msg->xPos / m_dynamics.r;
   m_q_curr(1) = msg->xAng;
   m_q_curr(2) = msg->xVel / m_dynamics.r;
   m_q_curr(3) = msg->xAngVel;
+
+  if (!m_odom_recieved) {
+    m_q_zero = m_q_curr;
+    m_odom_recieved = true;
+    std::cout << "[BallbotMPC] First odom msg recieved" << std::endl;
+  }
 }
 
 //========================================================================================
@@ -84,34 +88,35 @@ Eigen::MatrixXd BallbotMPC::generate_reference_trajectory(const double &time) {
 }
 //========================================================================================
 void BallbotMPC::step(const double &time) {
+  if (m_odom_recieved) {
+    Eigen::MatrixXd ref_traj = m_dynamics.generate_reference_trajectory(
+        time, m_N, m_dt, m_q_zero, m_trajectory);
 
-  Eigen::MatrixXd ref_traj =
-      m_dynamics.generate_reference_trajectory(time, m_N, m_dt, m_trajectory);
+    // Solve the QP
+    Eigen::MatrixXd x_out;
+    double f_val;
+    m_mpc->solve(m_q_curr, ref_traj, x_out, f_val);
 
-  // Eigen::VectorXd x0 = ref_traj.col(0);
+    Eigen::MatrixXd opt_traj;
+    Eigen::MatrixXd u0;
+    m_mpc->get_output(x_out, u0, opt_traj);
 
-  // Solve the QP
-  Eigen::MatrixXd x_out;
-  double f_val;
-  m_mpc->solve(m_q_curr, ref_traj, x_out, f_val);
+    // std::cout << "theta_opt: " << opt_traj.row(0) << std::endl;
+    // std::cout << "phi_opt: " << opt_traj.row(1) << std::endl;
 
-  Eigen::MatrixXd opt_traj;
-  Eigen::MatrixXd u0;
-  m_mpc->get_output(x_out, u0, opt_traj);
+    publish_state_msg(ref_traj, m_ref_traj_pub);
+    publish_state_msg(opt_traj, m_opt_traj_pub);
 
-  // std::cout << "theta_opt: " << opt_traj.row(0) << std::endl;
-  // std::cout << "phi_opt: " << opt_traj.row(1) << std::endl;
+    // Publish commands
+    auto u0_thresh = threshold_cmd(u0);
+    publish_command(opt_traj, u0_thresh);
+    publish_debug_command(opt_traj, u0_thresh);
 
-  publish_state_msg(ref_traj, m_ref_traj_pub);
-  publish_state_msg(opt_traj, m_opt_traj_pub);
-
-  // Publish commands
-  publish_command(opt_traj, u0);
-  publish_debug_command(opt_traj, u0);
-
-  // Update to current positon (for now its fake)
-  // m_q_curr = ref_traj.col(1);
-  publish_des_odom(ref_traj.col(1));
+    // Update to current positon (for now its fake)
+    publish_des_odom(ref_traj.col(1));
+  } else {
+    std::cout << "[BallbotMPC] no odom recieved" << std::endl;
+  }
 }
 
 //========================================================================================
@@ -143,7 +148,7 @@ void BallbotMPC::publish_command(const Eigen::MatrixXd &opt_traj,
   rt_msgs::OlcCmd olc_cmd_msg;
   olc_cmd_msg.xAng = m_dynamics.Kmpc * u0(1, 0);
   olc_cmd_msg.yAng = 0.0;
-  olc_cmd_msg.xVel = 0.0*m_dynamics.Kmpc * u0(2, 0);
+  olc_cmd_msg.xVel = 0.0 * m_dynamics.Kmpc * u0(2, 0);
   olc_cmd_msg.yVel = 0.0;
 
   m_cmd_pub.publish(olc_cmd_msg);
@@ -151,7 +156,7 @@ void BallbotMPC::publish_command(const Eigen::MatrixXd &opt_traj,
 
 //========================================================================================
 void BallbotMPC::publish_debug_command(const Eigen::MatrixXd &opt_traj,
-                                 const Eigen::MatrixXd &u0) {
+                                       const Eigen::MatrixXd &u0) {
 
   // Convert ball angular velocity to linear velocity
   Eigen::VectorXd x_vel = opt_traj.row(2) * m_dynamics.r;
@@ -182,5 +187,18 @@ void BallbotMPC::publish_des_odom(const Eigen::VectorXd &des_odom) {
 
   m_des_odom_pub.publish(odom_msg);
 }
+
+//========================================================================================
+Eigen::MatrixXd BallbotMPC::threshold_cmd(const Eigen::MatrixXd &u0) {
+
+  Eigen::MatrixXd threshold_u0 = u0;
+
+  if (abs(u0(1, 0)) < m_dynamics.xAng_cmd_threshold) {
+    threshold_u0(1, 0) = 0.0;
+  }
+
+  return threshold_u0;
+}
+
 } // namespace control
 } // namespace ballbot

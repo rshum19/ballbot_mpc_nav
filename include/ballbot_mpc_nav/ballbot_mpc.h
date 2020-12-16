@@ -72,7 +72,12 @@ private:
    * @brief Function to publish debug command
    */
   void publish_debug_command(const Eigen::MatrixXd &opt_traj,
-                                 const Eigen::MatrixXd &u0);
+                             const Eigen::MatrixXd &u0);
+
+  /**
+   * @brief Threshold command before sending
+   */
+  Eigen::MatrixXd threshold_cmd(const Eigen::MatrixXd &opt_traj);
 
   // ROS Node
   ros::NodeHandle m_nh;
@@ -92,8 +97,10 @@ private:
 
   // MPC variables
   Eigen::VectorXd m_q_curr;
+  Eigen::VectorXd m_q_zero;
   Eigen::MatrixXd m_ref_traj;
 
+  bool m_odom_recieved = false;
   int m_N;
   int m_Nx;
   int m_Nu;

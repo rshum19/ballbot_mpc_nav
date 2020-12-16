@@ -78,7 +78,7 @@ public:
    */
   Eigen::MatrixXd
   generate_reference_trajectory(const double &time, const int &N,
-                                const double &dt,
+                                const double &dt, const Eigen::VectorXd &q0,
                                 const Trajectories &trajectory) {
     Eigen::MatrixXd ref_traj(Nx, N + 1);
     ref_traj.setZero();
@@ -86,16 +86,18 @@ public:
     double tend = 30;
     double xPos = 0.0;
     double xVel = 1.0;
+    double xPos0 = q0(0) * r;
+
     switch (trajectory) {
     case Trajectories::STRAIGHT:
       tend = 30;
       xPos = 0.0;
-      xVel = 0.1;
+      xVel = 0.05;
 
       for (int i = 0; i < N + 1; i++) {
 
         if (time < tend) {
-          xPos = xVel * time + dt * i;
+          xPos = xPos0 + xVel * time + dt * i;
           ref_traj(0, i) = xPos;
           ref_traj(2, i) = xVel;
         } else {
@@ -112,7 +114,7 @@ public:
       for (int i = 0; i < N + 1; i++) {
         double ti = time + dt * i;
         // ref_traj(0, i) = sin(0.5 * ti); // xref
-        xPos = sin(0.1 * ti);
+        xPos = xPos0 + sin(0.1 * ti);
         ref_traj(0, i) = xPos / r;
         ref_traj(1, i) = 0; // yref
       }
@@ -152,6 +154,8 @@ public:
   double Gamma2 = (g * l * mbody * alpha) / denom;
   double Beta1 = (alpha + gamma + 2 * beta) / denom;
   double Beta2 = -(alpha + beta) / denom;
+
+  double xAng_cmd_threshold = 0.004;
 
   // Linear Dynamics
   Eigen::MatrixXd A;
