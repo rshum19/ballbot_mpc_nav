@@ -107,6 +107,7 @@ void BallbotMPC::step(const double &time) {
 
   // Publish commands
   publish_command(opt_traj, u0);
+  publish_debug_command(opt_traj, u0);
 
   // Update to current positon (for now its fake)
   // m_q_curr = ref_traj.col(1);
@@ -142,10 +143,26 @@ void BallbotMPC::publish_command(const Eigen::MatrixXd &opt_traj,
   rt_msgs::OlcCmd olc_cmd_msg;
   olc_cmd_msg.xAng = m_dynamics.Kmpc * u0(1, 0);
   olc_cmd_msg.yAng = 0.0;
+  olc_cmd_msg.xVel = 0.0*m_dynamics.Kmpc * u0(2, 0);
+  olc_cmd_msg.yVel = 0.0;
+
+  m_cmd_pub.publish(olc_cmd_msg);
+}
+
+//========================================================================================
+void BallbotMPC::publish_debug_command(const Eigen::MatrixXd &opt_traj,
+                                 const Eigen::MatrixXd &u0) {
+
+  // Convert ball angular velocity to linear velocity
+  Eigen::VectorXd x_vel = opt_traj.row(2) * m_dynamics.r;
+  Eigen::VectorXd x_pos = opt_traj.row(0) * m_dynamics.r;
+
+  rt_msgs::OlcCmd olc_cmd_msg;
+  olc_cmd_msg.xAng = m_dynamics.Kmpc * u0(1, 0);
+  olc_cmd_msg.yAng = 0.0;
   olc_cmd_msg.xVel = m_dynamics.Kmpc * u0(2, 0);
   olc_cmd_msg.yVel = 0.0;
 
-  // m_cmd_pub.publish(olc_cmd_msg);
   m_debug_cmd_pub.publish(olc_cmd_msg);
 }
 

@@ -90,7 +90,7 @@ public:
     case Trajectories::STRAIGHT:
       tend = 30;
       xPos = 0.0;
-      xVel = 1.0;
+      xVel = 0.1;
 
       for (int i = 0; i < N + 1; i++) {
 
@@ -136,7 +136,7 @@ public:
   int Nx = 4;
   int Nu = 4;
 
-  double Kmpc = 0.2;
+  double Kmpc = 0.1;
 
   double denom = Iball * Ibody + Iball * std::pow(l, 2) * mbody +
                  Ibody * (mbody + mball) * std::pow(r, 2) +

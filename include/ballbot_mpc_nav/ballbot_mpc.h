@@ -68,6 +68,12 @@ private:
    */
   void publish_des_odom(const Eigen::VectorXd &des_odom);
 
+  /**
+   * @brief Function to publish debug command
+   */
+  void publish_debug_command(const Eigen::MatrixXd &opt_traj,
+                                 const Eigen::MatrixXd &u0);
+
   // ROS Node
   ros::NodeHandle m_nh;
 
