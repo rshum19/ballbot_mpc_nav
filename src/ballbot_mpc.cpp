@@ -92,6 +92,8 @@ void BallbotMPC::step(const double &time) {
     Eigen::MatrixXd ref_traj = m_dynamics.generate_reference_trajectory(
         time, m_N, m_dt, m_q_zero, m_trajectory);
 
+    // Print current state
+    std::cout << "q_curr: " << m_q_curr.transpose() << std::endl;
     // Solve the QP
     Eigen::MatrixXd x_out;
     double f_val;
@@ -108,7 +110,9 @@ void BallbotMPC::step(const double &time) {
     publish_state_msg(opt_traj, m_opt_traj_pub);
 
     // Publish commands
-    auto u0_thresh = threshold_cmd(u0);
+    //auto u0_thresh = threshold_cmd(u0);
+    auto u0_thresh = u0;
+    u0_thresh(1,0) = get_smooth_cmd(-u0(1,0));
     publish_command(opt_traj, u0_thresh);
     publish_debug_command(opt_traj, u0_thresh);
 
@@ -164,9 +168,9 @@ void BallbotMPC::publish_debug_command(const Eigen::MatrixXd &opt_traj,
 
   rt_msgs::OlcCmd olc_cmd_msg;
   olc_cmd_msg.xAng = m_dynamics.Kmpc * u0(1, 0);
-  olc_cmd_msg.yAng = 0.0;
+  olc_cmd_msg.yAng = u0(0,0);
   olc_cmd_msg.xVel = m_dynamics.Kmpc * u0(2, 0);
-  olc_cmd_msg.yVel = 0.0;
+  olc_cmd_msg.yVel = u0(3,0);
 
   m_debug_cmd_pub.publish(olc_cmd_msg);
 }
@@ -198,6 +202,13 @@ Eigen::MatrixXd BallbotMPC::threshold_cmd(const Eigen::MatrixXd &u0) {
   }
 
   return threshold_u0;
+}
+
+//========================================================================================
+double BallbotMPC::get_smooth_cmd(const double& cmd) {
+	
+	m_smooth_cmd = m_smooth_cmd - (m_lpf_beta * (m_smooth_cmd - cmd));
+return m_smooth_cmd;
 }
 
 } // namespace control

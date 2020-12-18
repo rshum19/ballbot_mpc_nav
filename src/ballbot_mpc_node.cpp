@@ -55,6 +55,7 @@ int main(int argc, char **argv) {
     ros::Time t_start = ros::Time::now();
     double t_now = ros::Time::now().toSec() - loop_start.toSec();
     ballbot_mpc.step(t_now);
+    ROS_INFO_STREAM("Tnow: " << t_now);
     ros::Time t_elapsed = ros::Time::now();
 
     double duration = t_elapsed.toSec() - t_start.toSec();

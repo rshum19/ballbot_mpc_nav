@@ -78,6 +78,10 @@ private:
    * @brief Threshold command before sending
    */
   Eigen::MatrixXd threshold_cmd(const Eigen::MatrixXd &opt_traj);
+ 
+double get_smooth_cmd(const double& cmd);
+  double m_smooth_cmd;
+  double m_lpf_beta = 0.025;
 
   // ROS Node
   ros::NodeHandle m_nh;

@@ -92,7 +92,7 @@ public:
     case Trajectories::STRAIGHT:
       tend = 30;
       xPos = 0.0;
-      xVel = 0.05;
+      xVel = 0.1;
 
       for (int i = 0; i < N + 1; i++) {
 
@@ -138,7 +138,7 @@ public:
   int Nx = 4;
   int Nu = 4;
 
-  double Kmpc = 0.1;
+  double Kmpc = 0.5;
 
   double denom = Iball * Ibody + Iball * std::pow(l, 2) * mbody +
                  Ibody * (mbody + mball) * std::pow(r, 2) +
@@ -155,7 +155,7 @@ public:
   double Beta1 = (alpha + gamma + 2 * beta) / denom;
   double Beta2 = -(alpha + beta) / denom;
 
-  double xAng_cmd_threshold = 0.004;
+  double xAng_cmd_threshold = 0.0005;
 
   // Linear Dynamics
   Eigen::MatrixXd A;

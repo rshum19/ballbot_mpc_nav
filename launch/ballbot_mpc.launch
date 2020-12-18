@@ -2,6 +2,7 @@
 <launch>
 
   <arg name="sim" default="false"/>
+  <arg name="record" default="false"/>
 
   <node pkg="ballbot_mpc_nav" type="ballbot_mpc_node" name="ballbot_mpc_node" output="screen">
     <param name="horizon_size" value="10"/>
@@ -10,5 +11,5 @@
     <remap if="$(arg sim)" from="/mpc/debug/des_odom" to="/rt/odom"/>
   </node>
 
-
+  <node pkg="rosbag" type="record" name="rosbag_record" args="record -a" if="$(arg record)"/>
 </launch>
